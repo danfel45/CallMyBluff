@@ -46,7 +46,11 @@ export class AppComponent implements OnInit {
         this.selectedRiverCards.push(card);
       }
     }
+
+
   }
 
   
 }
+
+//test for git purposes 
