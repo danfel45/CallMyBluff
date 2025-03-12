@@ -1,0 +1,34 @@
+<div class = selected-cards>
+   <!-- Hand Cards -->
+    <h3>Hand Cards (2):</h3>
+    <div class="card-list">
+    <app-card *ngFor="let card of hand" [card]="card" [selected]="true"></app-card>
+    </div>
+
+    <!-- Community Cards -->
+    <h3>Community Cards (5):</h3>
+    <div class="card-list">
+    <app-card *ngFor="let card of community" [card]="card" [selected]="true"></app-card>
+    </div> 
+</div>
+
+
+
+<!-- Display the card grid -->
+<div class="card-grid">
+  <app-card *ngFor="let card of deck" 
+            [card]="card" 
+            [selected]="isSelected(card)" 
+            (click)="selectCard(card)">
+  </app-card>
+</div> 
+
+
+
+<div class="prediction-area">
+    <h3>Prediction:</h3>
+    <p><strong>Predicted Hand Strength:</strong> {{ prediction?.predictedHandStrength || 'N/A' }}</p>
+    <p><strong>Exact Hand Strength:</strong> {{ prediction?.exactHandStrength || 'N/A' }}</p>
+</div>
+
+
