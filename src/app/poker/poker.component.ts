@@ -16,6 +16,11 @@ export class PokerComponent {
   hand: string[] = [];
   community: string[] = [];
   prediction: any = null;
+  loading = false;
+
+  strengthBarWidth = 0;
+
+  error: string | null = null;
 
   constructor() {
     this.generateDeck();
@@ -40,49 +45,105 @@ export class PokerComponent {
       this.community.push(card);
     }
 
-
-    if(this.hand.length == 2 && this.community.length == 5)
-    {
+    if (this.hand.length === 2 || (this.hand.length === 2 && this.community.length > 0)) {
       this.getPrediction();
     }
-    
   }
 
   isSelected(card: string): boolean {
     return this.hand.includes(card) || this.community.includes(card);
   }
 
-  getPrediction() {
+  async getPrediction() {
+    if (this.hand.length !== 2) return;
+
+    this.loading = true;
+    this.error = null;
     const apiUrl = 'http://127.0.0.1:5000/predict';
     const payload = { hand: this.hand, community: this.community };
 
-    if (this.hand.length !== 2 || this.community.length !== 5) {
-      console.error("You need exactly 2 hand cards and 5 community cards.");
-      this.prediction = 'You need exactly 2 hand cards and 5 community cards.';
-      return;
-    }
-
-    fetch(apiUrl, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(payload)
-    })
-      .then(response => {
-        if (!response.ok) {
-          throw new Error('Network response was not ok');
-        }
-        return response.json();
-      })
-      .then(data => {
-        console.log('Prediction Response:', data);
-        this.prediction = {
-          predictedHandStrength: data.predicted_hand_strength || 'No predicted hand strength',
-          exactHandStrength: data.exact_hand_strength || 'No exact hand strength'
-        };
-      })
-      .catch(error => {
-        console.error('Error fetching prediction:', error);
-        this.prediction = 'Error fetching prediction';
+    try {
+      const response = await fetch(apiUrl, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
       });
+
+      if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+
+      const data = await response.json();
+      this.prediction = {
+        predictedHandStrength: data.predicted_hand_strength ?? 0,
+        exactHandStrength: data.exact_hand_strength ?? 'Not available yet',
+        cardsRemaining: data.cards_remaining ?? 5 - this.community.length
+      };
+      this.updateStrengthBar();
+
+    } catch (error) {
+      console.error('Error fetching prediction:', error);
+      this.error = 'Error fetching prediction. Please try again.';
+      this.prediction = null;
+    } finally {
+      this.loading = false;
+    }
+  }
+
+  getStrengthPercentage(): number {
+    if (!this.prediction) return 0;
+    return this.prediction.exactHandStrength !== 'Not available yet' 
+      ? this.prediction.exactHandStrength 
+      : this.prediction.predictedHandStrength;
+  }
+
+  getStrengthColor(percentage: number): string {
+    const hue = (percentage * 1.2).toString(10);
+    return `hsl(${hue}, 100%, 50%)`;
+  }
+
+  updateStrengthBar() {
+    const newStrength = this.getStrengthPercentage();
+  
+    // Reset to 0 first to trigger transition
+    this.strengthBarWidth = 0;
+  
+    // Wait a tick, then set new width
+    setTimeout(() => {
+      this.strengthBarWidth = newStrength;
+    }, 10);
+  }
+  
+
+  resetGame() {
+    this.hand = [];
+    this.community = [];
+    this.prediction = null;
+    this.error = null;
+  }
+
+
+  getBestHand(): string {
+    const allCards = [...this.hand, ...this.community];
+    const handRanks = allCards.map(card => card[0]); // The first character is the rank
+    const handSuits = allCards.map(card => card[1]); // The second character is the suit
+
+    // Count how many times each rank appears in the hand
+    const rankCounts = handRanks.reduce((acc, rank) => {
+      acc[rank] = (acc[rank] || 0) + 1;
+      return acc;
+    }, {} as { [key: string]: number });
+
+    // Check for the different hand types
+    const uniqueRanks = Object.values(rankCounts);
+    uniqueRanks.sort((a, b) => b - a); // Sort counts from high to low
+
+    if (uniqueRanks[0] === 4) return "Four of a Kind";
+    if (uniqueRanks[0] === 3 && uniqueRanks[1] === 2) return "Full House";
+    if (uniqueRanks[0] === 3) return "Three of a Kind";
+    if (uniqueRanks[0] === 2 && uniqueRanks[1] === 2) return "Two Pair";
+    if (uniqueRanks[0] === 2) return "Pair";
+
+    // You can add more checks for straights, flushes, etc. if you wish
+    // For now, default to "High Card" if no specific hand is found
+    return "High Card";
   }
 }
