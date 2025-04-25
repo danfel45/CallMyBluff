@@ -1,29 +1,22 @@
-<div class="selected-cards">
-  <!-- Hand Cards -->
-  <h3>Hand Cards (2):</h3>
-  <div class="card-list">
-    <app-card *ngFor="let card of hand" [card]="card" [selected]="true"></app-card>
-  </div>
 
-  <!-- Community Cards -->
-  <h3>Community Cards ({{ community.length }}/5):</h3>
-  <div class="card-list">
-    <app-card *ngFor="let card of community" [card]="card" [selected]="true"></app-card>
-  </div>
+
+<div class="analysis-container">
+  <div class="selected-cards">
+    <!-- Hand Cards -->
+    <h3>Hand Cards (2):</h3>
+    <div class="card-list">
+      <app-card *ngFor="let card of hand" [card]="card" [selected]="true"></app-card>
+    </div>
   
-  <button class="reset-btn" (click)="resetGame()">Reset Game</button>
-</div>
-
-<!-- Card Grid -->
-<div class="card-grid">
-  <app-card *ngFor="let card of deck" 
-            [card]="card" 
-            [selected]="isSelected(card)" 
-            (click)="selectCard(card)">
-  </app-card>
-</div>
-
-<!-- Prediction Area -->
+    <!-- Community Cards -->
+    <h3>Community Cards ({{ community.length }}/5):</h3>
+    <div class="card-list">
+      <app-card *ngFor="let card of community" [card]="card" [selected]="true"></app-card>
+    </div>
+    
+    
+  </div>
+  <!-- Prediction Area -->
 <div class="prediction-area">
   <h3>Hand Strength:</h3>
   
@@ -63,3 +56,23 @@
     </div>
   </div>
 </div>
+</div>
+
+
+
+<!-- Card Grid -->
+<div class="card-grid">
+  <app-card *ngFor="let card of deck" 
+            [card]="card" 
+            [selected]="isSelected(card)" 
+            (click)="selectCard(card)">
+  </app-card>
+</div>
+
+
+<div class ="reset-container">
+
+  <button class="reset-btn" (click)="resetGame()">Reset Game</button>
+</div>
+
+

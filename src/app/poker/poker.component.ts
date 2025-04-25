@@ -123,27 +123,74 @@ export class PokerComponent {
 
   getBestHand(): string {
     const allCards = [...this.hand, ...this.community];
-    const handRanks = allCards.map(card => card[0]); // The first character is the rank
-    const handSuits = allCards.map(card => card[1]); // The second character is the suit
-
-    // Count how many times each rank appears in the hand
-    const rankCounts = handRanks.reduce((acc, rank) => {
-      acc[rank] = (acc[rank] || 0) + 1;
-      return acc;
-    }, {} as { [key: string]: number });
-
-    // Check for the different hand types
-    const uniqueRanks = Object.values(rankCounts);
-    uniqueRanks.sort((a, b) => b - a); // Sort counts from high to low
-
-    if (uniqueRanks[0] === 4) return "Four of a Kind";
-    if (uniqueRanks[0] === 3 && uniqueRanks[1] === 2) return "Full House";
-    if (uniqueRanks[0] === 3) return "Three of a Kind";
-    if (uniqueRanks[0] === 2 && uniqueRanks[1] === 2) return "Two Pair";
-    if (uniqueRanks[0] === 2) return "Pair";
-
-    // You can add more checks for straights, flushes, etc. if you wish
-    // For now, default to "High Card" if no specific hand is found
+  
+    if (allCards.length === 0) return "";
+  
+    // Separate ranks and suits
+    const ranks = allCards.map(c => c[0]);
+    const suits = allCards.map(c => c[1]);
+  
+    // Convert rank chars to numbers for easier straight detection
+    const rankMap: { [key: string]: number } = {
+      '2': 2, '3': 3, '4': 4, '5': 5,
+      '6': 6, '7': 7, '8': 8, '9': 9,
+      'T': 10, 'J': 11, 'Q': 12, 'K': 13, 'A': 14
+    };
+  
+    const values = ranks.map(r => rankMap[r]).sort((a, b) => a - b);
+  
+    // Count by rank
+    const rankCounts: { [key: number]: number } = {};
+    values.forEach(v => rankCounts[v] = (rankCounts[v] || 0) + 1);
+  
+    const counts = Object.values(rankCounts).sort((a, b) => b - a);
+  
+    // Check for flush
+    const suitCounts: { [key: string]: string[] } = {};
+    allCards.forEach(card => {
+      const [rank, suit] = card;
+      if (!suitCounts[suit]) suitCounts[suit] = [];
+      suitCounts[suit].push(rank);
+    });
+  
+    const flushSuit = Object.keys(suitCounts).find(suit => suitCounts[suit].length >= 5);
+    const flushCards = flushSuit ? suitCounts[flushSuit].map(r => rankMap[r]).sort((a, b) => b - a) : [];
+  
+    const hasFlush = flushCards.length >= 5;
+  
+    // Check for straight
+    const uniqueValues = [...new Set(values)];
+    const hasStraight = (vals: number[]) => {
+      for (let i = 0; i <= vals.length - 5; i++) {
+        if (vals[i + 4] - vals[i] === 4 && new Set(vals.slice(i, i + 5)).size === 5) return true;
+      }
+      // special case: A-2-3-4-5
+      if (vals.includes(14) && vals.includes(2) && vals.includes(3) && vals.includes(4) && vals.includes(5)) return true;
+      return false;
+    };
+    const isStraight = hasStraight(uniqueValues);
+  
+    // Check for straight flush
+    let isStraightFlush = false;
+    let isRoyalFlush = false;
+  
+    if (hasFlush) {
+      const flushUnique = [...new Set(flushCards)].sort((a, b) => a - b);
+      isStraightFlush = hasStraight(flushUnique);
+      isRoyalFlush = isStraightFlush && flushUnique.includes(10) && flushUnique.includes(14);
+    }
+  
+    // Return best hand based on priority
+    if (isRoyalFlush) return "Royal Flush";
+    if (isStraightFlush) return "Straight Flush";
+    if (counts[0] === 4) return "Four of a Kind";
+    if (counts[0] === 3 && counts[1] === 2) return "Full House";
+    if (hasFlush) return "Flush";
+    if (isStraight) return "Straight";
+    if (counts[0] === 3) return "Three of a Kind";
+    if (counts[0] === 2 && counts[1] === 2) return "Two Pair";
+    if (counts[0] === 2) return "Pair";
     return "High Card";
   }
+  
 }
