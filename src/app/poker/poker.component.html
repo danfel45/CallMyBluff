@@ -1,5 +1,3 @@
-
-
 <div class="analysis-container">
   <div class="selected-cards">
     <!-- Hand Cards -->
@@ -7,58 +5,63 @@
     <div class="card-list">
       <app-card *ngFor="let card of hand" [card]="card" [selected]="true"></app-card>
     </div>
-  
+
     <!-- Community Cards -->
     <h3>Community Cards ({{ community.length }}/5):</h3>
     <div class="card-list">
       <app-card *ngFor="let card of community" [card]="card" [selected]="true"></app-card>
     </div>
-    
-    
   </div>
-  <!-- Prediction Area -->
-<div class="prediction-area">
-  <h3>Hand Strength:</h3>
-  
-  <div *ngIf="loading" class="loading-indicator">
-    Calculating prediction...
-  </div>
-  
-  <div *ngIf="error" class="error-message">
-    {{ error }}
-  </div>
-  
-  <div *ngIf="!loading && !error">
-    <div class="strength-bar-container">
-      <div class="strength-bar" 
-           *ngIf="prediction"
-           [style.width.%]="strengthBarWidth"
-           [style.background-color]="getStrengthColor(getStrengthPercentage())">
-        <span class="strength-text">{{ getStrengthPercentage() | number:'1.0-0' }}%</span>
+
+  <!-- Prediction Area - Always visible now -->
+  <div class="prediction-area">
+    <h3>Hand Strength:</h3>
+
+    <div *ngIf="loading" class="loading-indicator">
+      Calculating prediction...
+    </div>
+
+    <div *ngIf="error" class="error-message">
+      {{ error }}
+    </div>
+
+    <!-- Main prediction display - now always shown -->
+    <div>
+      <div class="strength-bar-container" style="width: 300px;"> <!-- Fixed width container -->
+        <div class="strength-bar" 
+             [style.width.%]="getStrengthPercentage()"
+             [style.background-color]="getStrengthColor(getStrengthPercentage())">
+          <span class="strength-text">{{ getStrengthPercentage() | number:'1.0-0' }}%</span>
+        </div>
+      </div>
+
+      <div class="strength-info">
+        <p *ngIf="prediction?.exactHandStrength !== null">
+          <strong>Exact Strength:</strong> {{ prediction.exactHandStrength | number:'1.0-2' }}%
+        </p>
+        <p *ngIf="prediction?.exactHandStrength === null && prediction?.predictedHandStrength !== undefined">
+          <strong>Predicted Strength:</strong> {{ prediction.predictedHandStrength | number:'1.0-2' }}%
+        </p>
+        <p *ngIf="!prediction?.exactHandStrength && !prediction?.predictedHandStrength">
+          <strong>Predicted Strength:</strong> 0%
+        </p>
+        <p>
+          <strong>Cards Remaining:</strong> {{ prediction?.cardsRemaining || 5 }}
+        </p>
+      </div>
+
+      <!-- Best Hand -->
+      <div class="best-hand">
+        <p><strong>Current Best Hand:</strong> {{ getBestHand() || "None selected" }}</p>
+      </div>
+
+      <!-- Action Message -->
+      <div class="action-message">
+        {{ prediction?.recommendedAction || "Select cards to get prediction" }}
       </div>
     </div>
-    
-    <div class="strength-info">
-      <p *ngIf="prediction?.exactHandStrength !== 'Not available yet'">
-        <strong>Exact Strength:</strong> {{ prediction?.exactHandStrength | number:'1.0-2' }}%
-      </p>
-      <p *ngIf="prediction?.exactHandStrength === 'Not available yet' && prediction">
-        <strong>Predicted Strength:</strong> {{ prediction?.predictedHandStrength | number:'1.0-2' }}%
-      </p>
-      <p *ngIf="prediction">
-        <strong>Cards Remaining:</strong> {{ prediction?.cardsRemaining }}
-      </p>
-    </div>
-
-    <!-- Add the Best Hand -->
-    <div class="best-hand">
-      <p><strong>Current Best Hand:</strong> {{ getBestHand() }}</p>
-    </div>
   </div>
 </div>
-</div>
-
-
 
 <!-- Card Grid -->
 <div class="card-grid">
@@ -69,10 +72,6 @@
   </app-card>
 </div>
 
-
-<div class ="reset-container">
-
+<div class="reset-container">
   <button class="reset-btn" (click)="resetGame()">Reset Game</button>
 </div>
-
-

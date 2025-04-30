@@ -15,7 +15,12 @@ export class PokerComponent {
   deck: string[] = [];
   hand: string[] = [];
   community: string[] = [];
-  prediction: any = null;
+  prediction: any = {
+    predictedHandStrength: 0,
+    exactHandStrength: null,
+    cardsRemaining: 5,
+    recommendedAction: "Select cards to get prediction"
+  };
   loading = false;
 
   strengthBarWidth = 0;
@@ -56,29 +61,36 @@ export class PokerComponent {
 
   async getPrediction() {
     if (this.hand.length !== 2) return;
-
+  
     this.loading = true;
     this.error = null;
     const apiUrl = 'http://127.0.0.1:5000/predict';
     const payload = { hand: this.hand, community: this.community };
-
+  
     try {
       const response = await fetch(apiUrl, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload)
       });
-
+  
       if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
-
+  
       const data = await response.json();
       this.prediction = {
         predictedHandStrength: data.predicted_hand_strength ?? 0,
-        exactHandStrength: data.exact_hand_strength ?? 'Not available yet',
+        exactHandStrength: data.exact_hand_strength ?? null,
         cardsRemaining: data.cards_remaining ?? 5 - this.community.length
       };
+      
+      // Add recommendation based on strength and cards remaining
+      this.prediction.recommendedAction = this.getRecommendation(
+        this.prediction.exactHandStrength ?? this.prediction.predictedHandStrength,
+        this.prediction.cardsRemaining
+      );
+      
       this.updateStrengthBar();
-
+  
     } catch (error) {
       console.error('Error fetching prediction:', error);
       this.error = 'Error fetching prediction. Please try again.';
@@ -88,11 +100,56 @@ export class PokerComponent {
     }
   }
 
+  getRecommendation(strengthPercent: number, cardsRemaining: number): string {
+    // Preflop / Flop (3+ cards left)
+    if (cardsRemaining >= 3) {
+      if (strengthPercent >= 92) {
+        return "Very strong hand - Raise big or go all-in!";
+      } else if (strengthPercent >= 78) {
+        return "Strong hand - Raise confidently";
+      } else if (strengthPercent >= 60) {
+        return "Good potential - Bet cautiously or call";
+      } else if (strengthPercent >= 40) {
+        return "Moderate hand - Check or call small bets";
+      } else {
+        return "Weak hand - Fold unless very cheap to call";
+      }
+    }
+    // Turn (2 cards left)
+    else if (cardsRemaining == 2) {
+      if (strengthPercent >= 90) {
+        return "Very strong hand - Bet big for value";
+      } else if (strengthPercent >= 75) {
+        return "Strong hand - Raise to build the pot";
+      } else if (strengthPercent >= 55) {
+        return "Decent hand - Bet or call reasonable raises";
+      } else if (strengthPercent >= 35) {
+        return "Marginal hand - Check or call small bets";
+      } else {
+        return "Weak hand - Fold unless getting good odds";
+      }
+    }
+    // River (1 card left, board complete)
+    else {
+      if (strengthPercent >= 85) {
+        return "Very strong hand - Bet big for maximum value";
+      } else if (strengthPercent >= 70) {
+        return "Strong hand - Value bet";
+      } else if (strengthPercent >= 50) {
+        return "Good hand - Bet for thin value or call";
+      } else if (strengthPercent >= 30) {
+        return "Bluff catcher - Check/call but fold to big bets";
+      } else {
+        return "Very weak - Fold unless opponent is bluffing often";
+      }
+    }
+  }
+
   getStrengthPercentage(): number {
     if (!this.prediction) return 0;
-    return this.prediction.exactHandStrength !== 'Not available yet' 
+    return this.prediction.exactHandStrength !== null 
       ? this.prediction.exactHandStrength 
-      : this.prediction.predictedHandStrength;
+      : (this.prediction.predictedHandStrength || 0);
   }
 
   getStrengthColor(percentage: number): string {
@@ -111,15 +168,19 @@ export class PokerComponent {
       this.strengthBarWidth = newStrength;
     }, 10);
   }
-  
 
   resetGame() {
     this.hand = [];
     this.community = [];
-    this.prediction = null;
+    this.prediction = {
+      predictedHandStrength: 0,
+      exactHandStrength: null,
+      cardsRemaining: 5,
+      recommendedAction: "Select cards to get prediction"
+    };
     this.error = null;
+    this.strengthBarWidth = 0;
   }
-
 
   getBestHand(): string {
     const allCards = [...this.hand, ...this.community];
@@ -192,5 +253,4 @@ export class PokerComponent {
     if (counts[0] === 2) return "Pair";
     return "High Card";
   }
-  
 }
