@@ -1,6 +1,6 @@
 .card {
-  width: 75px;  /* Adjust this width based on your design needs */
-  height: 110px;  /* Adjust this height based on your design needs */
+  width: 100px;  /* Adjust this width based on your design needs */
+  height: 135px;  /* Adjust this height based on your design needs */
   display: flex;
   justify-content: center;
   align-items: center;
